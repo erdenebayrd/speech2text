@@ -13,6 +13,7 @@ from six.moves import queue
 RATE = 16000
 CHUNK = int(RATE / 10)  # 100ms
 
+PROJECT_ID = "videoapiservice-265212"
 
 class MicrophoneStream(object):
     """Opens a recording stream as a generator yielding the audio chunks."""
@@ -79,6 +80,26 @@ class MicrophoneStream(object):
             yield b''.join(data)
 
 
+def sample_translate_text(project_id, translation_text_arr):
+    """Translating Text."""
+
+    client = translate.TranslationServiceClient()
+
+    parent = client.location_path(project_id, "global")
+
+    # Detail on supported types can be found here:
+    # https://cloud.google.com/translate/docs/supported-formats
+    response = client.translate_text(
+        parent=parent,
+        contents=translation_text_arr,
+        mime_type="text/plain",  # mime types: text/plain, text/html
+        source_language_code="en-US",
+        target_language_code="ja",
+    )
+    # Display the translation for each input text provided
+    return response.translations
+
+
 def listen_print_loop(responses):
     """Iterates through server responses and prints them.
 
@@ -124,6 +145,10 @@ def listen_print_loop(responses):
 
         else:
             print(transcript + overwrite_chars)
+            for translation in sample_translate_text (PROJECT_ID, [transcript + overwrite_chars]):
+                print(translation.translated_text + "\r")
+            print ("")
+            
 
             # Exit recognition if any of the transcribed phrases could be
             # one of our keywords.
@@ -157,6 +182,9 @@ def main():
 
         # Now, put the transcription responses to use.
         listen_print_loop(responses)
+
+
+from google.cloud import translate
 
 
 if __name__ == '__main__':

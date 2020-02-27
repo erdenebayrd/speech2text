@@ -52,6 +52,25 @@ const request = {
   interimResults: true // If you want interim results, set this to true
 };
 
+console.log("Listening, press Ctrl+C to stop.");
+
+var app = require("express")();
+var http = require("http").createServer(app);
+var io = require("socket.io")(http);
+
+app.get("/", function(req, res) {
+  res.sendFile("/Users/da-40/projects/speech2text/front/public/index.html");
+});
+
+io.on("connection", function(socket) {
+  console.log("a user connected");
+
+  socket.on("disconnect", function() {
+    console.log("user disconnected");
+  });
+  // socket.broadcast.emit("hi this is from backend");
+});
+
 // Create a recognize stream
 const recognizeStream = client
   .streamingRecognize(request)
@@ -60,7 +79,8 @@ const recognizeStream = client
     if (data.results[0] && data.results[0].alternatives[0]) {
       const englishText = data.results[0].alternatives[0].transcript;
       const japaneseText = await translateTextToJapanese(englishText);
-      console.log(englishText + "\n" + japaneseText + "\n");
+      // console.log(englishText + "\n" + japaneseText + "\n");
+      io.emit("chat", englishText + "<br/>" + japaneseText + "<br/>");
     } else {
       console.log(`\n\nReached transcription time limit, press Ctrl+C\n`);
     }
@@ -81,4 +101,13 @@ recorder
   .on("error", console.error)
   .pipe(recognizeStream);
 
-console.log("Listening, press Ctrl+C to stop.");
+// io.on("connection", function(socket) {
+//   console.log("A user connected");
+//   // for (let i = 0; i < 10; i++) {
+//   //   io.emit("chat message", "hi this is from back end");
+//   // }
+// });
+
+http.listen(3010, function() {
+  console.log("listening on *:3010");
+});
